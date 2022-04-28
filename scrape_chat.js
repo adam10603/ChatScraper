@@ -119,20 +119,19 @@ if (process.argv.length < 3) {
         node scrape_chat [Options] [Video IDs...]
     
     Options:
-        --dict=[Ruleset]    Defines the ruleset used as the dictionary. The
-                            dictionary is used to match the contents of messages.
-                            Expects a "list" after the = sign.
+        --dict=[Ruleset]    Defines the ruleset used as the dictionary. This is
+                            used to match the contents of messages.
 
-        --users=[Ruleset]   Defines the ruleset used for matching usernames. Expects a
-                            "list" after the = sign. Unlike the dictionary, this list
-                            ignores the "standalone" rule type, as that doesn't make sense
+        --users=[Ruleset]   Defines the ruleset used for matching usernames.
+                            Unlike the dictionary, this list ignores the
+                            "standalone" rule type, as that doesn't make sense
                             for usernames.
         
-        --print-links       Prints timestamped links for each message that was found.
+        --print-links       Prints timestamped VOD links for each message.
 
         --plain             Won't use escape sequences for colorizing the output.
 
-        --force-download    Re-downloads chat replays even if they are present in
+        --force-download    Re-downloads the chat history even if it's present in
                             the local cache.
     
     Video IDs
@@ -140,7 +139,8 @@ if (process.argv.length < 3) {
         You can supply as many as you like.
     
     Rulesets:
-        Read the GitHub page of the project for an explanation of how rulesets work.
+        Rulesets are documented on the GitHub page of the project:
+        https://github.com/adam10603/ChatScraper
     `;
 
     console.log(msg);
