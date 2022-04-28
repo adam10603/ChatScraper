@@ -48,7 +48,6 @@ function transformMessage(msg) {
                 id: msg.commenter._id
             },
             message: msg.message.body
-            // stripped_message: strippedMsg
         };
     } catch(err) {
         throw new Error("Invalid message format");
@@ -105,7 +104,6 @@ async function downloadPart(videoID, cursor, abortSignal) {
  * @returns {Promise<ChatMessage[]>}
  */
 async function cacheChat(videoID, cachePath, abortSignal, progressEvent) {
-    // if (videoID === "1456893669") throw new Error("Yo this shits bad");
     // console.log(`Downloading chat for  ${videoID}...`);
     let ret    = [];
     let cursor = undefined;
@@ -187,7 +185,6 @@ class ChatDownloader extends EventEmitter {
             } catch (err) {
                 if (incrementedDownloads) this.#currentDownloads--;
                 if (err !== -1) this.emit("error", err, videoID);
-                // else console.log("-1 thrown");
                 return false;
             }
         };
