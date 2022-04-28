@@ -7,7 +7,7 @@ This Node.JS command-line tool helps to quickly search the chat history of any n
 
 ## Usage 🖥️
 
-The code is self-contained and doesn't rely on any other packages or libraries that aren't a default part of Node.JS. You can just [download the code](/adam10603/ChatScraper/releases) and run the command with `node`, nothing else to install or configure.
+The code is self-contained and doesn't rely on any other packages or libraries that aren't a default part of Node.JS. You can just [download the code](https://github.com/adam10603/ChatScraper/releases/latest) and run the command with `node`, nothing else to install or configure.
 
 ## Command-line Arguments ⌨
 
