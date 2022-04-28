@@ -116,13 +116,13 @@ function searchMessage(msgLowerCase, word, highlights) {
 if (process.argv.length < 3) {
     const msg = `
     Usage:
-        node scrape_chat [Options] [Video IDs...]
+        node scrape_chat [Options] <Video ID>...
     
     Options:
-        --dict=[Ruleset]    Defines the ruleset used as the dictionary. This is
+        --dict=<Ruleset>    Defines the ruleset used as the dictionary. This is
                             used to match the contents of messages.
 
-        --users=[Ruleset]   Defines the ruleset used for matching usernames.
+        --users=<Ruleset>   Defines the ruleset used for matching usernames.
                             Unlike the dictionary, this list ignores the
                             "standalone" rule type, as that doesn't make sense
                             for usernames.
@@ -134,7 +134,7 @@ if (process.argv.length < 3) {
         --force-download    Re-downloads the chat history even if it's present in
                             the local cache.
     
-    Video IDs
+    Video IDs:
         These are the IDs of the VODs you want to search the chat replays of.
         You can supply as many as you like.
     
