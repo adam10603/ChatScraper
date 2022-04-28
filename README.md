@@ -7,7 +7,7 @@ This Node.JS command-line tool helps to quickly search the chat history of any n
 
 ## Usage 🖥️
 
-The code is self-contained and doesn't rely on any other packages or libraries that aren't a default part of Node.JS. You can just [download the code](releases) and run the command with `node`, nothing else to install or configure.
+The code is self-contained and doesn't rely on any other packages or libraries that aren't a default part of Node.JS. You can just [download the code](/adam10603/ChatScraper/releases) and run the command with `node`, nothing else to install or configure.
 
 ## Command-line Arguments ⌨
 
@@ -35,7 +35,7 @@ Prevents the script from using escape sequences to color the output. Use this if
 
 The script will always save a copy of each VOD's chat log in a local cache which speeds up future searches of the same VOD. Use this flag to re-download the chat logs even if they are present in the cache.
 
-The cache directory is called `cache` by default and it's automatically created in the same directory where the script is.
+This directory is called `cache` by default and it's automatically created in the same directory the script is in.
 
 #### `<Video ID>...`
 
