@@ -43,7 +43,9 @@ Specify one or more video IDs to search their chat history at once. Concurrent d
 
 ### Rulesets
 
-A ruleset is a list of rules you can use to find the content you want. You can supply rulesets to the `--dict=` and `--users=` flags to filter the messages and/or usernames respectively.
+A ruleset is a list of rules you can use to find the content you want.
+
+You can supply rulesets to the `--dict=` and `--users=` flags to filter the messages and/or usernames respectively.
 
 A ruleset can be provided in one of two ways:
  - A comma-separated list, such as: `--dict="booba,cocka"`
@@ -58,7 +60,7 @@ Rule-matching is always case-insensitive.
 
 Rulsets can also contain a special rule that matches everything. This rule is a single `*` character. Wildcards are **not** supported in rulesets in general, however, this special rule exists to enable rulesets that only contain negative rules. A set of negative-only rules would otherwise not show any results.
 
-Positive rules can be marked "standalone" with an `=` prefix. These will only produce a match if the word is **not** a part of a bigger word. This means it can only be surrounded by whitespaces, characters like `?` `.` `,` etc, or the start/end of the string. For example this is useful if searching for the streamer's name which also happens to be their emote prefix.
+Positive rules can be marked "standalone" with an `=` prefix. These will only produce a match if the word is **not** a part of a bigger word. This means it can only be surrounded by whitespaces, characters like `?` `.` `,` etc, or the start/end of the string. For example this can be useful is a search term is also an emote prefix.
 
 #### Example Rulesets
 
