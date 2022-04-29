@@ -57,9 +57,9 @@ function processCommaList(list) {
 
 // Processes a list-type arg (dictionary or user list)
 function processListArg(listArg) {
-    const jsonFile = /^"?(.+\.json)"?$/.exec(listArg);
+    const jsonFile = /^["']?(.+\.json)["']?$/.exec(listArg);
 
-    if (jsonFile && jsonFile.length === 2) {
+    if (jsonFile?.length === 2) {
         let ret = null;
 
         try {
@@ -73,9 +73,9 @@ function processListArg(listArg) {
         return ret;
     }
 
-    const commaList = /^"?(.+)"?$/.exec(listArg);
+    const commaList = /^["']?(.+)["']?$/.exec(listArg);
 
-    if (commaList && commaList.length == 2) {
+    if (commaList?.length === 2) {
         return processCommaList(commaList[1]);
     }
 
@@ -87,9 +87,10 @@ function processListArg(listArg) {
  * @param {string} msgLowerCase 
  * @param {string} word 
  * @param {Highlighter.StringFormat[]} highlights
+ * @param {boolean} dictWildcard
  * @returns {{blackFound: boolean, whiteFound: boolean}}
  */
-function searchMessage(msgLowerCase, word, highlights) {
+function searchMessage(msgLowerCase, word, highlights, dictWildcard) {
     let blackFound = false;
     let whiteFound = false;
     if (word.startsWith("^")) {
@@ -97,15 +98,15 @@ function searchMessage(msgLowerCase, word, highlights) {
             blackFound = true;
         }
     } else if (!dictWildcard) {
-        let wordIndex = -1;
+        let foundIndex = -1;
         if (word.startsWith("=")) {
-            wordIndex = msgLowerCase.search(new RegExp(`\\b${word.substring(1)}\\b`));
+            foundIndex = msgLowerCase.search(new RegExp(`\\b${word.substring(1)}\\b`));
         } else {
-            wordIndex = msgLowerCase.indexOf(word);
+            foundIndex = msgLowerCase.indexOf(word);
         }
-        if (wordIndex >= 0) {
+        if (foundIndex >= 0) {
             whiteFound = true;
-            highlights.push(getFormat.match(wordIndex, wordIndex + word.length));
+            highlights.push(getFormat.match(foundIndex, foundIndex + word.length));
         }
     }
     return { blackFound, whiteFound };
@@ -250,7 +251,7 @@ downloader.on("data",
 
         if (useDict) {
             for (let word of dict) {
-                const result = searchMessage(msgLowerCase, word, highlights);
+                const result = searchMessage(msgLowerCase, word, highlights, dictWildcard);
                 blackFound = blackFound || result.blackFound;
                 whiteFound = whiteFound || result.whiteFound;
                 if (blackFound) break;
