@@ -21,7 +21,7 @@ Defines the "dictionary" [ruleset](#rulesets) that will be used for matching mes
 
 #### `--users=<Ruleset>`
 
-Defines the [ruleset](#rulesets) that will be used for matching usernames. Unlike with the dictionary, the `=` prefix in a rule has no effect here. Usernames are a single word, so rules trying to match a standalone word are meaningless.
+Defines the [ruleset](#rulesets) that will be used for matching usernames. Unlike with the dictionary, every rule here will be treated as "standalone" (just like the `=` prefix). This is because partially matching usernames doesn't make much sense. Only exact matches are considered.
 
 #### `--print-links`
 
@@ -33,9 +33,9 @@ Prevents the script from using escape sequences to color the output. Use this if
 
 #### `--force-download`
 
-The script will always save a copy of each VOD's chat log in a local cache which speeds up future searches of the same VOD. Use this flag to re-download the chat logs even if they are present in the cache.
+The script will always save a copy of each VOD's chat log in a local cache which speeds up future searches of the same VOD.  The cache directory is called `cache` and it's automatically created in the same directory the script is in.
 
-This directory is called `cache` by default and it's automatically created in the same directory the script is in.
+This flag will re-download the chat logs even if they are in the cache. This also refreshes the cached version.
 
 #### `<Video ID>...`
 
@@ -43,9 +43,9 @@ Specify one or more video IDs to search their chat history at once. Concurrent d
 
 ### Rulesets
 
-A ruleset is a list of rules you can use to find the content you want.
+A ruleset is a list of rules you can use to find the messages you want.
 
-You can supply rulesets to the `--dict=` and `--users=` flags to filter the messages and/or usernames respectively.
+The `--dict=` and `--users=` flags both take a ruleset to filter the messages and usernames respectively.
 
 A ruleset can be provided in one of two ways:
  - A comma-separated list, such as: `--dict="booba,cocka"`
@@ -60,7 +60,7 @@ Rule-matching is always case-insensitive.
 
 Rulsets can also contain a special rule that matches everything. This rule is a single `*` character. Wildcards are **not** supported in rulesets in general, however, this special rule exists to enable rulesets that only contain negative rules. A set of negative-only rules would otherwise not show any results.
 
-Positive rules can be marked "standalone" with an `=` prefix. These will only produce a match if the word is **not** a part of a bigger word. This means it can only be surrounded by whitespaces, characters like `?` `.` `,` etc, or the start/end of the string. For example this can be useful is a search term is also an emote prefix.
+Positive rules can be marked "standalone" with an `=` prefix. These will only produce a match if the word is **not** a part of a bigger word. This means it can't be bordered by anything other than whitespaces or characters like `?` `.` `,` etc. For example this can be useful is a search term is also an emote prefix.
 
 #### Example Rulesets
 
