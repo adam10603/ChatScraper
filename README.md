@@ -89,7 +89,8 @@ The `no_bots.json` ruleset is included by default. Here's what it looks like:
     "*",
     "^nightbot",
     "^streamlabs",
-    "^streamelements"
+    "^streamelements",
+    "^moobot"
 ]
 ```
 
