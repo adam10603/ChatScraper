@@ -94,13 +94,5 @@ The `no_bots.json` ruleset is included by default. Here's what it looks like:
 ]
 ```
 
-## Version History 📃
-
-* v1.0
-  * Initial release
-* v1.0.1
-  * Added support for single quotes (`'`) around comma-lists and JSON paths.
-  * Fixed a bug that slowed down search speeds.
-
 _____________________
 ![MIT Logo](https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/MIT_logo.svg/32px-MIT_logo.svg.png) Distributed under the [MIT License](LICENSE).
