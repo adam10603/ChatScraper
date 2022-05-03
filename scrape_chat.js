@@ -82,6 +82,10 @@ function processListArg(listArg) {
     return null;
 }
 
+function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * 
  * @param {string} msgLowerCase 
@@ -98,15 +102,18 @@ function searchMessage(msgLowerCase, word, highlights, dictWildcard) {
             blackFound = true;
         }
     } else if (!dictWildcard) {
-        let foundIndex = -1;
+        let matches = [];
         if (word.startsWith("=")) {
-            foundIndex = msgLowerCase.search(new RegExp(`\\b${word.substring(1)}\\b`));
+            word = word.substring(1);
+            matches = [...msgLowerCase.matchAll(new RegExp(`\\b${escapeRegExp(word)}\\b`, "g"))];
         } else {
-            foundIndex = msgLowerCase.indexOf(word);
+            matches = [...msgLowerCase.matchAll(word)];
         }
-        if (foundIndex >= 0) {
+        if (matches.length > 0) {
             whiteFound = true;
-            highlights.push(getFormat.match(foundIndex, foundIndex + word.length));
+            for (let match of matches) {
+                highlights.push(getFormat.match(match.index, match.index + word.length));
+            }
         }
     }
     return { blackFound, whiteFound };

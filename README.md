@@ -1,5 +1,5 @@
 # Chat Scraper
-![Version](https://img.shields.io/badge/Version-1.0.1-blue.svg)
+![Version](https://img.shields.io/badge/Version-1.0.2-blue.svg)
 
 This Node.JS command-line tool helps to quickly search the chat history of any number of Twitch VODs. It can filter by message content or username in a few different ways.
 
@@ -82,7 +82,7 @@ Here are a few random rulesets and things they would or wouldn't match.
  - Using `--users=no_bots.json` :
    - ✅ (Every message except those sent by certain bots)
 
-The `no_bots.json` ruleset is included by default. Here's what it looks like:
+The `no_bots.json` ruleset is included with the code. Here's what it looks like:
 
 ```json
 [
