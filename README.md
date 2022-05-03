@@ -29,7 +29,7 @@ Displays timestamped VOD URLs next to each message that was found. This makes it
 
 #### `--plain`
 
-Prevents the script from using escape sequences to color the output. Use this if your terminal is showing junk characters instead of colors.
+Prevents the script from using escape sequences to color the output. Use this if you're redirecting the output to a file, or if your terminal is showing junk characters instead of colors.
 
 #### `--force-download`
 
