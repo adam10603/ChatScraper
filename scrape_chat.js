@@ -223,6 +223,8 @@ if (IDs.length === 0) {
     process.exit(1);
 }
 
+IDs = [...new Set(IDs)]; // Removing duplicates
+
 // Obtaining chat replays
 
 let nFound          = 0;
