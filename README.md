@@ -1,5 +1,5 @@
 # Chat Scraper
-![Version](https://img.shields.io/badge/Version-1.0.2-blue.svg)
+![Version](https://img.shields.io/badge/Version-1.0.3-blue.svg)
 
 This Node.JS command-line tool helps to quickly search the chat history of any number of Twitch VODs. It can filter by message content or username in a few different ways.
 
