@@ -40,7 +40,7 @@ function printChatMessage(msg, vod, highlights, maxNameLen = 22) {
     let link = "";
 
     if (printLinks) {
-        link = `https://www.twitch.tv/videos/${vod}?t=${Math.max(Math.floor(msg.stream_timestamp - 5), 0)}s`;
+        link = `https://twitch.tv/videos/${vod}?t=${Math.max(Math.floor(msg.stream_timestamp - 5), 0)}s`;
         link = prettifyString(link, getFormat.link(0, link.length)).padEnd(plain ? 52 : 79, " ");
     }
 
