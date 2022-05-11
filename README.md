@@ -60,7 +60,7 @@ Rule-matching is always case-insensitive.
 
 Rulsets can also contain a special rule that matches everything. This rule is a single `*` character. Wildcards are **not** supported in rulesets in general, however, this special rule exists to enable rulesets that only contain negative rules. A set of negative-only rules would otherwise not show any results.
 
-Positive rules can be marked "standalone" with an `=` prefix. These will only produce a match if the word is **not** a part of a bigger word. This means it can't be bordered by anything other than whitespaces or characters like `?` `.` `,` etc. For example this can be useful is a search term is also an emote prefix.
+Positive rules can be marked "standalone" with an `=` prefix. These will only produce a match if the word is **not** a part of a bigger word. This means it can't be bordered by anything other than whitespaces or characters like `?` `.` `,` etc. For example this can be useful if a search term is also an emote prefix.
 
 #### Example Rulesets
 
