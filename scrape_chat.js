@@ -40,8 +40,10 @@ function printChatMessage(msg, vod, highlights, maxNameLen = 22) {
     let link = "";
 
     if (printLinks) {
-        link = `https://twitch.tv/videos/${vod}?t=${Math.max(Math.floor(msg.stream_timestamp - 5), 0)}s`;
-        link = prettifyString(link, getFormat.link(0, link.length)).padEnd(plain ? 52 : 79, " ");
+        link = "https://twitch.tv/videos/";
+        const baseLength = link.length;
+        link += `${vod}?t=${Math.max(Math.floor(msg.stream_timestamp - 5), 0)}s`;
+        link = prettifyString(link, getFormat.link(0, link.length)).padEnd(plain ? (baseLength + 23) : (baseLength + 50), " ");
     }
 
     process.stdout.write(`${link}[${msg.created.replace(/\.\d+Z$/, "Z")}] ${(msg.user.name + ": ").padEnd(maxNameLen + 4, " ")}`);
