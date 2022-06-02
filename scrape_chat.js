@@ -127,29 +127,29 @@ if (process.argv.length < 3) {
     const msg = `
     Usage:
         node scrape_chat [Options] <Video ID>...
-    
+
     Options:
         --dict=<Ruleset>    Defines the ruleset used as the dictionary. This is
                             used to match the contents of messages.
 
         --users=<Ruleset>   Defines the ruleset used for matching usernames.
-                            Unlike the dictionary, this list ignores the
-                            "standalone" rule type, as that doesn't make sense
+                            Unlike the dictionary, every rule in this list is
+                            "standalone" by default, as that makes more sense
                             for usernames.
-        
+
         --print-links       Prints timestamped VOD links for each message.
 
         --plain             Won't use escape sequences for colorizing the output.
 
         --force-download    Re-downloads the chat history even if it's present in
                             the local cache.
-    
+
     Video IDs:
         These are the IDs of the VODs you want to search the chat replays of.
         You can supply as many as you like.
-    
+
     Rulesets:
-        Rulesets are documented on the GitHub page of the project:
+        See the documentation in README.md or on the GitHub page of the project:
         https://github.com/adam10603/ChatScraper
     `;
 
