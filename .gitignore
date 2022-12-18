@@ -1,3 +1,5 @@
 cache/
+_cache/
 dict/
+responses/
 *.bat
