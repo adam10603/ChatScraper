@@ -1,3 +1,5 @@
+## THIS TOOL DOES NOT CURRENTLY WORK because of Twitch API changes. I'm working on an updated version! Original description below.
+
 # Chat Scraper
 ![Version](https://img.shields.io/badge/Version-1.0.5-blue.svg)
 
