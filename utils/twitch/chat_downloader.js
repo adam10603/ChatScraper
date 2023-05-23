@@ -1,22 +1,17 @@
 "use strict";
 
-const https             = require("https");
-const EventEmitter      = require("events");
-const fs                = require("fs");
+const common       = require("./internal/common");
+const EventEmitter = require("events");
+const fs           = require("fs");
 
-const cacheFolder       = "./cache";
-const maxDownloads      = 2;
+const cacheFolder  = "./cache";
+const maxDownloads = 3; // Max number of concurrent downloads
 
-const requestOptions    = {
-    hostname: "api.twitch.tv",
-    method: "GET",
-    headers: {
-        "Accept": "application/vnd.twitchtv.v5+json",
-        "Client-ID": "kimne78kx3ncx6brgo4mv6wki5h1ko" // Client ID used by the web version of Twitch, exempt from the v5 deprecation.
+Object.defineProperty(Array.prototype, "last", {
+    get: function last() {
+        return this[this.length - 1];
     }
-}
-
-
+});
 
 /**
  * @typedef {object} ChatMessage
@@ -30,7 +25,6 @@ const requestOptions    = {
  */
 
 
-
 /**
  * Translates a message object from the Twitch API to our own format.
  * @param {object} msg
@@ -40,59 +34,20 @@ function transformMessage(msg) {
     let ret = {};
     try {
         ret = {
-            created: msg.created_at,
-            stream_timestamp: msg.content_offset_seconds,
+            created: msg.node.createdAt ?? "1970-01-01T00:00:00.000Z",
+            stream_timestamp: msg.node.contentOffsetSeconds ?? 0,
             user: {
-                display_name: msg.commenter.display_name,
-                name: msg.commenter.name.toLowerCase(),
-                id: msg.commenter._id
+                display_name: msg.node.commenter?.displayName ?? "null",
+                name: ((msg.node.commenter?.login ?? msg.node.commenter?.displayName) ?? "null").toLowerCase(),
+                id: msg.node.commenter?.id ?? "0"
             },
-            message: msg.message.body
+            message: ""
         };
+        for (let i = 0; i < msg.node.message.fragments.length; i++) ret.message += msg.node.message.fragments[i].text
     } catch(err) {
         throw new Error("Invalid message format");
     }
     return ret;
-}
-
-/**
- * @param {string} videoID
- * @param {string} cursor
- * @param {AbortSignal} abortSignal
- * @param {function():void} progressEvent
- * @returns {Promise<any>}
- */
-async function downloadPart(videoID, cursor, abortSignal) {
-    const requestPath   = `/v5/videos/${videoID}/comments?` + (cursor ? `cursor=${cursor}` : "content_offset_seconds=0");
-    const options       = Object.assign({ path: requestPath }, requestOptions);
-
-    return new Promise((resolve, reject) => {
-        https.get(options, (res) => {
-            let data = "";
-
-            let checkAbortSignal = () => {
-                if (abortSignal.aborted) reject(-1); // Special code for quiet termination
-            };
-
-            res.setEncoding("utf-8");
-
-            res.on("data", d => {
-                checkAbortSignal();
-                data += d;
-            });
-            res.on("error", e => reject(e));
-            res.on("end", async () => {
-                checkAbortSignal();
-                let parsedData = null;
-                try { parsedData = JSON.parse(data); }
-                catch (err) {
-                    reject(err);
-                    return;
-                }
-                resolve(parsedData);
-            });
-        }).on("error", e => reject(e)).end();
-    });
 }
 
 /**
@@ -107,15 +62,37 @@ async function cacheChat(videoID, cachePath, abortSignal, progressEvent) {
     // console.log(`Downloading chat for  ${videoID}...`);
     let ret    = [];
     let cursor = undefined;
+    let offset = 0;
+    let lastIDSet = new Set();
     do {
-        const part = await downloadPart(videoID, cursor, abortSignal, progressEvent);
-        if (!Array.isArray(part?.comments)) throw new Error("Invalid response");
-        ret        = ret.concat(part.comments.map(transformMessage));
-        cursor     = part._next;
+        const part = await common.getChatReplayPart(videoID, offset, abortSignal, progressEvent);
+
+        const partIsArray = Array.isArray(part);
+
+        if (partIsArray) {
+            if (part[0]?.data?.video?.comments === null) break; // This indicates that we are past the end of the VOD
+        } else if (!Array.isArray(part[0]?.data?.video?.comments?.edges)) {
+            throw new Error(`Invalid response:\n${JSON.stringify(part)}`);
+        }
+
+        // not using the cursor bc the requests get rejected
+        // gonna use the last offset instead, then filter for duplicate messages
+
+        let backEdges = part.last.data.video.comments.edges;
+        offset = backEdges.last?.node?.contentOffsetSeconds ?? undefined;
+        if (!offset) throw new Error("Cannot find last message offset");
+
+        part[0].data.video.comments.edges = part[0].data.video.comments.edges.filter((msg) => !lastIDSet.has(msg.node.id));
+        lastIDSet.clear();
+        backEdges.forEach((msg) => lastIDSet.add(msg.node.id));
+
+        // i think theres always 1 part but using a loop just in case
+        for (let i = 0; i < part.length; i++) ret = ret.concat(part[i].data.video.comments.edges.map(transformMessage));
+        cursor = backEdges.last?.cursor ?? undefined;
         progressEvent();
     } while (cursor);
     fs.writeFileSync(cachePath, JSON.stringify(ret));
-    // console.log(`Finished download for ${videoID}...`);
+    // console.log(`Finished download for ${videoID}.`);
     return ret;
 }
 
@@ -161,7 +138,7 @@ class ChatDownloader extends EventEmitter {
     /**
      * Gets the chat replays from any number of streams.
      * @param {string[]} videoIDs Array of video IDs to get the chat replays from.
-     * @param {boolean} forceDownload Always download the chat replay even if it's present in the local cache.
+     * @param {boolean} forceDownload Downloads the chat replay even if it's present in the cache.
      */
     async getChatReplays(videoIDs, forceDownload = false) {
         let retrieveData = async (videoID) => {
@@ -170,13 +147,15 @@ class ChatDownloader extends EventEmitter {
             let incrementedDownloads    = false;
 
             try {
-                if (forceDownload || !fs.existsSync(cachePath)) {
-                    // Wait if there are too many downloads going on
-                    while (this.#currentDownloads >= maxDownloads) await resolveAfter(250);
+                let cacheExists = fs.existsSync(cachePath);
+                if (forceDownload || !cacheExists) {
+                    // Downloading chat replay if either force download is on, or the cache doesn't exist.
+                    while (this.#currentDownloads >= maxDownloads) await resolveAfter(250); // Wait if there are too many downloads going on
                     this.#currentDownloads++;
                     incrementedDownloads = true;
                     data = await cacheChat(videoID, cachePath, this.#abortController.signal, () => this.emit("progress"));
                 } else {
+                    // Reading the cached version
                     data = JSON.parse(fs.readFileSync(cachePath));
                 }
                 if (incrementedDownloads) this.#currentDownloads--;
@@ -192,6 +171,14 @@ class ChatDownloader extends EventEmitter {
         let workers = videoIDs.map(retrieveData);
         if ((await Promise.all(workers)).every(v => v === true)) this.emit("success");
         else this.emit("failure");
+    }
+
+    /**
+     * Takes an array of VOD IDs and only returns the ones that are not found in the cache.
+     * @param {any[]} videoIDs
+     */
+    removeCachedVODsFromList(videoIDs) {
+        return videoIDs.filter((ID) => { return !fs.existsSync(`${cacheFolder}/${ID}.json`); });
     }
 }
 

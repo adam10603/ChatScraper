@@ -1,8 +1,10 @@
 "use strict";
 
-const FS            = require("fs");
-const Downloader    = require("./utils/chat_downloader");
-const Highlighter   = require("./utils/string_highlighter");
+const FS             = require("fs");
+const ChatDownloader = require("./utils/twitch/chat_downloader");
+const VODList        = require("./utils/twitch/vod_list");
+const Highlighter    = require("./utils/string_highlighter");
+const { prettify } = require("./utils/string_highlighter");
 
 const getFormat = {
     notice: (start = 0, end = 9999) => Highlighter.format(start, end, Highlighter.color(160, 128, 0)),
@@ -16,13 +18,17 @@ let users           = [];
 let printLinks      = false;
 let plain           = false;
 let forceDownload   = false;
+let VODsFrom        = "";
+let maxVODs         = 5;
+let skipCached      = false;
+let noSearch        = false;
 
 // ============ Helper functions
 
 /**
  * 
- * @param {string} str 
- * @param {Highlighter.StringFormat | Highlighter.StringFormat[]} formatList 
+ * @param {string} str
+ * @param {Highlighter.StringFormat | Highlighter.StringFormat[]} formatList
  */
 function prettifyString(str, formatList) {
     if (plain) return str;
@@ -36,7 +42,7 @@ function prettifyString(str, formatList) {
  * @param {Highlighter.StringFormat[]} highlights
  * @param {number} maxNameLen
  */
-function printChatMessage(msg, vod, highlights, maxNameLen = 22) {
+function printChatMessage(msg, vod, highlights, maxNameLen = 20) {
     let link = "";
 
     if (printLinks) {
@@ -90,13 +96,13 @@ function escapeRegExp(str) {
 
 /**
  * 
- * @param {string} msgLowerCase 
- * @param {string} word 
- * @param {Highlighter.StringFormat[]} highlights
+ * @param {string} msgLowerCase
+ * @param {string} word
  * @param {boolean} dictWildcard
+ * @param {Highlighter.StringFormat[]} highlightsOut
  * @returns {{blackFound: boolean, whiteFound: boolean}}
  */
-function searchMessage(msgLowerCase, word, highlights, dictWildcard) {
+function searchMessage(msgLowerCase, word, dictWildcard, highlightsOut) {
     let blackFound = false;
     let whiteFound = false;
     if (word.startsWith("^")) {
@@ -114,7 +120,7 @@ function searchMessage(msgLowerCase, word, highlights, dictWildcard) {
         if (matches.length > 0) {
             whiteFound = true;
             for (let match of matches) {
-                highlights.push(getFormat.match(match.index, match.index + word.length));
+                highlightsOut.push(getFormat.match(match.index, match.index + word.length));
             }
         }
     }
@@ -126,27 +132,44 @@ function searchMessage(msgLowerCase, word, highlights, dictWildcard) {
 if (process.argv.length < 3) {
     const msg = `
     Usage:
-        node scrape_chat [Options] <Video ID>...
+        node scrape_chat [Options] [Video ID]...
 
     Options:
         --dict=<Ruleset>    Defines the ruleset used as the dictionary. This is
-                            used to match the contents of messages.
+                            used to filter messages by their content.
 
         --users=<Ruleset>   Defines the ruleset used for matching usernames.
                             Unlike the dictionary, every rule in this list is
                             "standalone" by default, as that makes more sense
                             for usernames.
 
+        --vods-from=<User>  Specifies a channel whose most recent VODs will be
+                            automatically added to the list of VODs to search.
+                            By default it gets the 5 most recent VODs but you can
+                            use the --max-vods option to change that.
+
+        --max-vods=<Number> Limits how many VOD IDs to get from the channel when
+                            using the --vods-from option. Default is 5 if omitted.
+
         --print-links       Prints timestamped VOD links for each message.
 
-        --plain             Won't use escape sequences for colorizing the output.
+        --plain             Won't use escape sequences to format the output.
 
         --force-download    Re-downloads the chat history even if it's present in
-                            the local cache.
+                            the local cache (also refreshing the cached version).
+                            Mutually exclusive with --skip-cached.
+
+        --skip-cached       Skips searching VODs that are present in the cache.
+                            Mutually exclusive with --force-download.
+
+        --no-search         Skips downloading and searching chat replays. Only
+                            prints the list of IDs that would have been searched.
 
     Video IDs:
         These are the IDs of the VODs you want to search the chat replays of.
-        You can supply as many as you like.
+        You can supply as many as you like. Alternatively you can use the
+        --vods-from option to automatically obtain the most recent VODs from
+        a specific channel.
 
     Rulesets:
         See the documentation in README.md or on the GitHub page of the project:
@@ -158,7 +181,7 @@ if (process.argv.length < 3) {
 }
 
 function bruh() {
-    console.error("Run the script with no arguments for help!");
+    console.error("Invalid arguments. Run the script with no arguments for help!");
     process.exit(1);
 }
 
@@ -193,6 +216,23 @@ for (let arg of process.argv.splice(2)) {
         }
     }
 
+    // VODs from option
+    if (!VODsFrom) {
+        const VODsFromFlag = /^--vods-from=(.+)/.exec(arg);
+
+        if (VODsFromFlag) {
+            VODsFrom = VODsFromFlag[1];
+            continue;
+        }
+    }
+
+    // Max VODs option
+    const maxVODsFlag = /^--max-vods=(\d+)/.exec(arg);
+    if (maxVODsFlag) {
+        maxVODs = parseInt(maxVODsFlag[1]);
+        continue;
+    }
+
     // Print links option
     if (/^--print-links$/.test(arg)) {
         printLinks = true;
@@ -211,6 +251,18 @@ for (let arg of process.argv.splice(2)) {
         continue;
     }
 
+    // Skip cached option
+    if (/^--skip-cached$/.test(arg)) {
+        skipCached = true;
+        continue;
+    }
+
+    // No search option
+    if (/^--no-search$/.test(arg)) {
+        noSearch = true;
+        continue;
+    }
+
     // Video ID
     if (/^\d+$/.test(arg)) {
         IDs.push(parseInt(arg));
@@ -220,95 +272,142 @@ for (let arg of process.argv.splice(2)) {
     bruh();
 }
 
-if (IDs.length === 0) {
-    console.error("No VOD IDs provided.");
-    process.exit(1);
-}
+(async () => { // I hate this
 
-IDs = [...new Set(IDs)]; // Removing duplicates
 
-// Obtaining chat replays
+    if (skipCached && forceDownload) bruh(); // Mutually exclusive options
 
-let nFound          = 0;
-let indicatorLen    = 0;
-const userWildcard  = users.includes("*");
-const dictWildcard  = dict.includes("*");
-const useDict       = (dict.length > (dictWildcard ? 1 : 0));
-const useUserList   = (users.length > (userWildcard ? 1 : 0));
+    // Adding the most recend VODs from a channel to the list (if the option was used)
+    if (VODsFrom) {
+        const VODScraper = new VODList();
 
-// if (!useDict && !useUserList) bruh();
+        VODScraper.on("data", (VODs) => {
+            IDs = IDs.concat(VODs);
+        });
 
-const downloader    = new Downloader();
+        VODScraper.on("error", (err) => {
+            console.error(err);
+            VODScraper.abortAll(); // Not really necessary for this
+            process.exit(1);
+        });
 
-downloader.on("data",
-/**
- * @param {Downloader.ChatMessage[]} messages
- * @param {string} videoID
- */
-(messages, videoID) => {
-    let maxNameLen   = 0;
-    let results      = [];
+        console.log(prettifyString(`\nObtaining the ${maxVODs} most recent VOD IDs from '${VODsFrom}' ...`, getFormat.notice()));
 
-    for (let msg of messages) {
-        if (useUserList) {
-            if (users.includes(`^${msg.user.name}`)) continue;
-            if (!userWildcard && !users.includes(msg.user.name)) continue;
-        }
+        await VODScraper.getRecentVODs(VODsFrom, maxVODs);
+    }
 
-        let blackFound      = false;
-        let whiteFound      = dictWildcard || !useDict;
-        let highlights      = [];
-        let msgLowerCase    = msg.message.toLowerCase();
+    if (IDs.length === 0) {
+        console.error("No VOD IDs provided.");
+        process.exit(1);
+    }
 
-        if (useDict) {
-            for (let word of dict) {
-                const result = searchMessage(msgLowerCase, word, highlights, dictWildcard);
-                blackFound = blackFound || result.blackFound;
-                whiteFound = whiteFound || result.whiteFound;
-                if (blackFound) break;
+    IDs = [...new Set(IDs)]; // Removing duplicates
+
+    // Obtaining chat replays
+
+    let nFound          = 0;
+    let indicatorLen    = 0;
+    const userWildcard  = users.includes("*");
+    const dictWildcard  = dict.includes("*");
+    const useDict       = (dict.length > (dictWildcard ? 1 : 0));
+    const useUserList   = (users.length > (userWildcard ? 1 : 0));
+
+    // if (!useDict && !useUserList) bruh();
+
+    const downloader    = new ChatDownloader();
+
+    downloader.on("data",
+    /**
+     * @param {Downloader.ChatMessage[]} messages
+     * @param {string} videoID
+     */
+    (messages, videoID) => {
+        // let maxNameLen   = 0;
+        let results      = [];
+
+        for (let msg of messages) {
+            if (useUserList) {
+                if (users.includes(`^${msg.user.name}`)) continue;
+                if (!userWildcard && !users.includes(msg.user.name)) continue;
+            }
+
+            let blackFound      = false;
+            let whiteFound      = dictWildcard || !useDict;
+            let highlights      = [];
+            let msgLowerCase    = msg.message.toLowerCase();
+
+            if (useDict) {
+                for (let word of dict) {
+                    const result = searchMessage(msgLowerCase, word, dictWildcard, highlights);
+                    blackFound = blackFound || result.blackFound;
+                    whiteFound = whiteFound || result.whiteFound;
+                    if (blackFound) break;
+                }
+            }
+
+            if (whiteFound && !blackFound) {
+                // maxNameLen = Math.max(maxNameLen, msg.user.name.length);
+                nFound++;
+                results.push([msg, videoID, highlights]);
             }
         }
 
-        if (whiteFound && !blackFound) {
-            maxNameLen = Math.max(maxNameLen, msg.user.name.length);
-            nFound++;
-            results.push([msg, videoID, highlights]);
+        if (results.length > 0) {
+            process.stdout.clearLine();
+            console.log("");
+            indicatorLen = 0;
         }
-    }
+    
+        for (let args of results) printChatMessage(...args);
+    });
 
-    if (results.length > 0) {
-        process.stdout.clearLine();
+    downloader.on("progress", () => {
+        if (indicatorLen >= 20) {
+            process.stdout.clearLine();
+            process.stdout.moveCursor(-20, 0);
+            indicatorLen = 0;
+        }
+        indicatorLen++;
+        process.stdout.write("░");
+    });
+
+    downloader.on("error", (err) => {
+        if (indicatorLen > 0) {
+            process.stdout.clearLine();
+            console.log("");
+            indicatorLen = 0;
+        }
+        console.error(err);
+        downloader.abortAll();
+    });
+
+    downloader.on("success", () => {
+        if (indicatorLen > 0) {
+            process.stdout.clearLine();
+            console.log("");
+            indicatorLen = 0;
+        }
+        console.log(prettifyString(`\nFound ${nFound} messages in total.\n`, getFormat.notice()));
+    });
+
+    downloader.on("failure", () => {
         console.log("");
-        indicatorLen = 0;
+        console.error("One or more operations have failed.");
+    });
+
+    if (skipCached) IDs = downloader.removeCachedVODsFromList(IDs);
+
+    if (IDs.length === 0) {
+        console.log(prettifyString("\nNo VODs to search!\n", getFormat.notice()));
+        process.exit(0);
     }
 
-    for (let args of results) printChatMessage(...args, maxNameLen);
-});
-
-downloader.on("progress", () => {
-    if (indicatorLen >= 20) {
-        process.stdout.clearLine();
-        process.stdout.moveCursor(-20, 0);
-        indicatorLen = 0;
+    if (noSearch) {
+        console.log(prettifyString(`\nSkipping search. VOD IDs that would have been searched: ${IDs.join(" ")}\n`, getFormat.notice()));
+    } else {
+        console.log(prettifyString(`\nSearching chat replays from: ${IDs.join(" ")} ...`, getFormat.notice()));
+        downloader.getChatReplays(IDs, forceDownload);
     }
-    indicatorLen++;
-    process.stdout.write("░");
-});
 
-downloader.on("error", (err) => {
-    console.error(err);
-    downloader.abortAll();
-});
 
-downloader.on("success", () => {
-    console.log(prettifyString(`\nFound ${nFound} messages in total.\n`, getFormat.notice()));
-});
-
-downloader.on("failure", () => {
-    console.log("");
-    console.error("One or more operations have failed.");
-});
-
-console.log(prettifyString(`\nSearching chat replays from: ${IDs.join(", ")} ...`, getFormat.notice()));
-
-downloader.getChatReplays(IDs, forceDownload);
+})();
