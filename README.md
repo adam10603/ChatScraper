@@ -25,13 +25,13 @@ Defines the [ruleset](#rulesets) that will be used for matching usernames. Unlik
 
 #### `--vods-from=<User>`
 
-Specifies a channel whose most recent VODs will be automatically added to the list of VODs to search. This makes it so that you don't have to supply VOD IDs by hand, but you can still do that in conjunction with this if you want to. By default this option gets the 5 most recent VODs from the channel, but you can use the [--max-vods](#max-vodsnumber) option to change that.
+Specifies a channel whose most recent VODs will be automatically added to the list of VODs to search. This makes it so that you don't have to supply VOD IDs by hand, but you can still do that in conjunction with this if you want to. By default this option gets the 5 most recent VODs from the channel, but you can use the [--max-vods](#--max-vodsnumber) option to change that.
 
-Note that currently this option also includes the VOD of the current stream, while the stream is still live. This results in a partial version of that VOD's chat replay being cached. If this happens, you can wait until the stream is over, then use the [--force-download](#force-download) option to re-download the entirety of the chat replay in question.
+Note that currently this option also includes the VOD of the current stream, while the stream is still live. This results in a partial version of that VOD's chat replay being cached. If this happens, you can wait until the stream is over, then use the [--force-download](#--force-download) option to re-download the entirety of the chat replay in question.
 
 #### `--max-vods=<Number>`
 
-Limits how many of the channel's most recent VOD IDs to get when using the [--vods-from](#vods-fromuser) option. The default is 5 if this option is omitted.
+Limits how many of the channel's most recent VOD IDs to get when using the [--vods-from](#--vods-fromuser) option. The default is 5 if this option is omitted.
 
 #### `--print-links`
 
@@ -45,15 +45,15 @@ Prevents the script from using escape sequences to color the output. Use this if
 
 The script will always save a copy of each VOD's chat log in a local cache which speeds up future searches of the same VOD. The cache directory is called `cache` and it's automatically created in the same directory the script is in.
 
-This flag will re-download the chat logs even if they are in the cache. This also refreshes the cached version. This option is mutually exclusive with [--skip-cached](#skip-cached).
+This flag will re-download the chat logs even if they are in the cache. This also refreshes the cached version. This option is mutually exclusive with [--skip-cached](#--skip-cached).
 
 #### `--skip-cached`
 
-Skips searching VODs that are present in the local cache. This is useful if you're using the [--vods-from](#vods-fromuser) option to search a streamer's most recent VODs, but you don't want any overlaps with VODs you've already searched in the past. This option is mutually exclusive with [--force-download](#force-download).
+Skips searching VODs that are present in the local cache. This is useful if you're using the [--vods-from](#--vods-fromuser) option to search a streamer's most recent VODs, but you don't want any overlaps with VODs you've already searched in the past. This option is mutually exclusive with [--force-download](#--force-download).
 
 #### `[Video ID]...`
 
-Here you can specify any number of video IDs (separated by a space) to search their chat history at once. Note that this is optional if you use the [--vods-from](#vods-fromuser) flag.
+Here you can specify any number of video IDs (separated by a space) to search their chat history at once. Note that this is optional if you use the [--vods-from](#--vods-fromuser) flag.
 
 ### Rulesets
 
