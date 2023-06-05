@@ -22,6 +22,7 @@ let VODsFrom        = "";
 let maxVODs         = 5;
 let skipCached      = false;
 let noSearch        = false;
+let outputPiped     = !process.stdout.isTTY;
 
 // ============ Helper functions
 
@@ -353,15 +354,16 @@ for (let arg of process.argv.splice(2)) {
         }
 
         if (results.length > 0) {
-            process.stdout.clearLine();
+            if (!outputPiped) process.stdout.clearLine();
             console.log("");
             indicatorLen = 0;
         }
-    
+
         for (let args of results) printChatMessage(...args);
     });
 
     downloader.on("progress", () => {
+        if (outputPiped) return;
         if (indicatorLen >= 20) {
             process.stdout.clearLine();
             process.stdout.moveCursor(-20, 0);
@@ -372,7 +374,7 @@ for (let arg of process.argv.splice(2)) {
     });
 
     downloader.on("error", (err) => {
-        if (indicatorLen > 0) {
+        if (indicatorLen > 0 && !outputPiped) {
             process.stdout.clearLine();
             console.log("");
             indicatorLen = 0;
@@ -382,7 +384,7 @@ for (let arg of process.argv.splice(2)) {
     });
 
     downloader.on("success", () => {
-        if (indicatorLen > 0) {
+        if (indicatorLen > 0 && !outputPiped) {
             process.stdout.clearLine();
             console.log("");
             indicatorLen = 0;
